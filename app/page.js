@@ -215,15 +215,14 @@ export default function Home() {
 
   // Manager View Calls
 
-  // filter through the users and get the user with the same id as the logged in user the propertyValues as definitionID 12673273
-  const testingUsers = allUsers.filter((user) => {
+  const managedUsers = allUsers.filter((user) => {
     const definitionId = 12886899; // Define the definition ID
     // Check if user.propertyValues has definitionId and the value matches the userId
     const matchingProperty = user.propertyValues.find((property) => property.definitionId === definitionId && property.value === userId);
     return matchingProperty !== undefined;
   });
 
-  console.log("testingUsers", testingUsers);
+  // Make a call and get linked items for all managedUsers
 
   const toggleView = () => {
     setActiveView(activeView === "Calendar" ? "Manager" : "Calendar");

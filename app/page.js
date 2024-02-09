@@ -28,6 +28,9 @@ export default function Home() {
   const [itemTypeId, setItemTypeId] = useState({ absence: 12678202, personnelCard: 12678205 });
   const calendarRef = useRef(null);
 
+  const [approvalModalVisible, setApprovalModalVisible] = useState(false);
+  const [approvalEvent, setApprovalEvent] = useState(null);
+
   //Manager view
   const [allVacations, setAllVacations] = useState([]);
 
@@ -203,6 +206,7 @@ export default function Home() {
                   color: color, // Add the color property here
                   status: statusValue, // For debugging
                   comment: event.propertyValues.find((property) => property.definition.id === 12673263).value,
+                  allDay: true,
                 };
               });
             setEvents(filteredEvents);
@@ -222,15 +226,119 @@ export default function Home() {
     return matchingProperty !== undefined;
   });
 
-  // Make a call and get linked items for all managedUsers
+  console.log("managedUsers", managedUsers);
+
+  // Make a call and get linked items for all managedUsers and it has to be all the managedUsers Id
+
+  useEffect(() => {
+    if (isManager) {
+      managedUsers.map((user) => {
+        fetch(`https://e2e-tm-prod-services.nsg-e2e.com/api/items/list/ItemLinks/${user.id}?filter=0`, {
+          method: "GET",
+          headers: {
+            Authorization: accessToken,
+            "Content-Type": "application/json",
+            "ocp-apim-subscription-key": "",
+          },
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data) {
+              // Filter the events based on the condition
+              const filteredEvents = data.childItems
+                .filter((event) => event.type.id === itemTypeId.absence)
+                .map((event) => {
+                  const statusProperty = event.propertyValues.find((property) => property.definition.id === 12888200);
+                  let statusValue = statusProperty ? statusProperty.value : "Unknown";
+
+                  let color;
+                  switch (
+                    statusValue.toLowerCase() // Case-insensitive matching
+                  ) {
+                    case "rejected":
+                      color = "red";
+                      break;
+                    case "approved":
+                      color = "green";
+                      break;
+                    case "requested":
+                      color = "orange";
+                      break;
+                    default:
+                      console.log(`Unhandled status: ${statusValue}`);
+                      color = "grey"; // Fallback color
+                      break;
+                  }
+                  return {
+                    id: event.id,
+                    title: event.name,
+                    start: event.propertyValues.find((property) => property.definition.id === 12673261).value,
+                    end: event.propertyValues.find((property) => property.definition.id === 12673262).value,
+                    color: color, // Add the color property here
+                    status: statusValue, // For debugging
+                    comment: event.propertyValues.find((property) => property.definition.id === 12673263).value,
+                    allDay: true,
+                  };
+                });
+              setAllVacations((prev) => [...prev, ...filteredEvents]);
+              console.log("filtered events with color and status", filteredEvents);
+            }
+          })
+          .catch((err) => console.error(err));
+      });
+    }
+  }, [allUsers]);
+
+  // Update the property with the property Api
+  const handleManagerAccept = (id, status, comment) => {
+    fetch(`https://e2e-tm-prod-services.nsg-e2e.com/api/items/properties?notify=true`, {
+      method: "PUT",
+      headers: {
+        Authorization: accessToken,
+        "Content-Type": "application/json",
+        "ocp-apim-subscription-key": "",
+      },
+      body: JSON.stringify([
+        {
+          itemId: id,
+          propertyValues: [
+            {
+              definition: {
+                id: 12888200,
+                name: "Status",
+              },
+              value: status,
+            },
+            {
+              definition: {
+                id: 12673263,
+                name: "Comment",
+              },
+              value: comment,
+            },
+          ],
+        },
+      ]),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to send the request.");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Success:", data);
+
+        setApprovalModalVisible(false);
+        setApprovalEvent(null);
+      })
+      .catch((error) => {
+        console.error("Error sending the request:", error);
+      });
+  };
 
   const toggleView = () => {
     setActiveView(activeView === "Calendar" ? "Manager" : "Calendar");
-  };
-
-  const handleAcceptReject = (eventId, status) => {
-    // Update the status of the event
-    setEvents((prevEvents) => prevEvents.map((event) => (event.id === eventId ? { ...event, status } : event)));
   };
 
   const handleSelect = (arg) => {
@@ -378,16 +486,28 @@ export default function Home() {
   };
 
   const handleEventClick = ({ event }) => {
-    // Store the clicked event's information
-    setSelectedEvent({
-      id: event.id,
-      title: event.title,
-      start: event.start,
-      end: event.end,
-      color: event.backgroundColor, // or event.color, depending on how you set it
-      comment: event.comment,
-    });
-    setEventModalVisible(true); // Show the modal with event details
+    if (activeView === "Manager") {
+      setApprovalEvent({
+        id: event.id,
+        title: event.title,
+        start: event.start,
+        end: event.end,
+        color: event.backgroundColor,
+        comment: event.comment,
+      });
+      setApprovalModalVisible(true);
+    } else {
+      // Store the clicked event's information
+      setSelectedEvent({
+        id: event.id,
+        title: event.title,
+        start: event.start,
+        end: event.end,
+        color: event.backgroundColor,
+        comment: event.comment,
+      });
+      setEventModalVisible(true);
+    }
   };
 
   const handleCancel = () => {
@@ -400,7 +520,7 @@ export default function Home() {
       {/* Conditional rendering for managers */}
       <div className="flex justify-between items-center my-4 w-[80%] mx-auto">
         <div>
-          <h1 className="text-3xl font-bold text-center">Vacation Calendar</h1>
+          <h1 className="text-3xl font-bold text-center">{activeView === "Calendar" ? "Vacation Calendar" : "Manager Calendar"}</h1>
         </div>
         <div className="flex justify-center">
           {isManager && (
@@ -435,6 +555,7 @@ export default function Home() {
             dayMaxEvents={true} // More events will cause a "+ more" link to display
             select={handleSelect}
             eventClick={handleEventClick}
+            firstDay={1}
           />
           {/* Modal for date selection */}
           {modalVisible && (
@@ -547,20 +668,77 @@ export default function Home() {
       )}
 
       {activeView === "Manager" && (
-        <div className="w-[80%] mx-auto">
-          <h2 className="text-2xl font-bold mt-4 mb-2">Vacation Requests</h2>
-          <FullCalendar
-            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            initialView="dayGridMonth"
-            headerToolbar={{
-              left: "prev,next today",
-              center: "title",
-              right: "dayGridMonth,timeGridWeek,timeGridDay",
-            }}
-            height="80vh"
-            events={allVacations}
-            dayMaxEvents={true} // More events will cause a "+ more" link to display
-          />
+        <div>
+          <div className="w-[80%] mx-auto">
+            <FullCalendar
+              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+              initialView="dayGridMonth"
+              headerToolbar={{
+                left: "prev,next today",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek,timeGridDay",
+              }}
+              height="80vh"
+              events={allVacations}
+              dayMaxEvents={true}
+              eventClick={handleEventClick}
+              firstDay={1}
+            />
+          </div>
+          {approvalModalVisible && (
+            <div className="fixed inset-0 z-50 overflow-y-auto">
+              <div className="flex items-center justify-center min-h-screen">
+                <div className="bg-gray-500 bg-opacity-75 fixed inset-0"></div>
+                <div className="bg-white rounded-lg overflow-hidden shadow-xl transform transition-all max-w-lg w-full p-5">
+                  <h3 className="text-lg font-medium text-gray-900">Manage Request</h3>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500">Title: {approvalEvent?.title}</p>
+                    <p className="text-sm text-gray-500">From: {moment(approvalEvent?.start).tz("Europe/Oslo").format("DD.MM.YYYY")}</p>
+                    <p className="text-sm text-gray-500">To: {moment(approvalEvent?.end).tz("Europe/Oslo").format("DD.MM.YYYY")}</p>
+                    <label htmlFor="status" className="block text-sm font-medium text-gray-700 mt-4">
+                      Status
+                    </label>
+                    <select
+                      id="status"
+                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                      defaultValue=""
+                      onChange={(e) => setApprovalEvent((prev) => ({ ...prev, status: e.target.value }))}
+                    >
+                      <option value="" disabled>
+                        Select status
+                      </option>
+                      <option value="Approved">Approved</option>
+                      <option value="Rejected">Rejected</option>
+                    </select>
+
+                    <textarea
+                      className="mt-4 p-2 w-full border rounded shadow-sm"
+                      placeholder="Add a comment (optional)"
+                      onChange={(e) => setApprovalEvent((prev) => ({ ...prev, comment: e.target.value }))}
+                      value={approvalEvent?.comment || ""}
+                    ></textarea>
+                  </div>
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      className="inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+                      onClick={() => {
+                        console.log("approvalEvent", approvalEvent);
+                        handleManagerAccept(approvalEvent?.id, approvalEvent?.status, approvalEvent?.comment), setApprovalModalVisible(false);
+                      }}
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      className="ml-3 inline-flex justify-center rounded-md border border-gray-300 px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                      onClick={() => setApprovalModalVisible(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </main>

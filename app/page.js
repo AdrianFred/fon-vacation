@@ -335,11 +335,26 @@ export default function Home() {
       .then((data) => {
         toast.success("Request has been updated successfully");
 
+        // Assuming `calendarRef` is a ref to your FullCalendar component
+        const calendarApi = calendarRef.current.getApi();
+        const event = calendarApi.getEventById(id);
+
+        if (event) {
+          // Update event properties based on the approval/rejection
+          event.setProp("title", `${status} vacation`); // Or any other title logic
+          event.setExtendedProp("comment", comment); // Assuming you store comments in extended props
+          event.setProp("color", status === "Approved" ? "green" : "red"); // Example color logic
+
+          // Optionally, if you have a status property
+          event.setExtendedProp("status", status);
+        }
+
         setApprovalModalVisible(false);
         setApprovalEvent(null);
       })
       .catch((error) => {
         console.error("Error sending the request:", error);
+        toast.error("Failed to update the request");
       });
   };
 
@@ -474,6 +489,7 @@ export default function Home() {
               end: selectedDate.end,
               color: "orange",
               status: "requested",
+              fullDay: true,
             });
 
             // Close the modal
@@ -676,6 +692,7 @@ export default function Home() {
         <div>
           <div className="w-[95%] md:w-[80%] mx-auto">
             <FullCalendar
+              ref={calendarRef}
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
               headerToolbar={{

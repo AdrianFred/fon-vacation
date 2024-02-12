@@ -1,3 +1,106 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* :root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+} */
+.fc .fc-view-harness-active .fc-view > * {
+  /* Prevents the view from scrolling on touch devices */
+  height: 85vh;
+}
+
+.fc .fc-toolbar.fc-header-toolbar {
+  margin-bottom: 0;
+}
+
+@media only screen and (max-width: 768px) {
+  .fc-header-toolbar {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .fc .fc-toolbar-chunk {
+    margin-bottom: 10px;
+  }
+
+  .fc-event {
+    font-size: 14px; /* Larger font for easier reading on touch devices */
+  }
+
+  .fc-event-title {
+    padding: 4px; /* Larger touch area */
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 18px; /* Larger font for easier reading on touch devices */
+  }
+
+  .fc .fc-view-harness-active .fc-view > * {
+    /* Prevents the view from scrolling on touch devices */
+    height: 80vh;
+  }
+}
+
+.fc-header-toolbar {
+  padding-top: 1em;
+  /* padding-left: 1em;
+  padding-right: 1em; */
+}
+
+.fc .fc-button {
+  padding-top: 0.1em !important;
+}
+
+.ui-timepicker-container {
+  z-index: 1100 !important;
+}
+
+.fc-day-today {
+  background: hsla(0, 0%, 82%, 0.3) !important;
+}
+.fc-event-main-frame {
+  color: black;
+}
+
+@media screen and (max-width: 480px) {
+  .fc-toolbar.fc-header-toolbar {
+    display: flex;
+    flex-direction: column;
+  }
+  .fc-toolbar.fc-header-toolbar .fc-toolbar-chunk:nth-child(1) {
+    order: 3;
+    margin-top: 5px;
+  }
+  .fc-toolbar.fc-header-toolbar .fc-toolbar-chunk:nth-child(2) {
+    order: 1;
+  }
+  .fc-toolbar.fc-header-toolbar .fc-toolbar-chunk:nth-child(3) {
+    order: 2;
+    margin-top: 5px;
+  }
+
+  .fc-event-time {
+    display: none !important;
+  }
+}

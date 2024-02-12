@@ -6,6 +6,8 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import moment from "moment-timezone";
+import "moment/locale/nb";
+import "moment-timezone";
 
 export default function Home() {
   // Example events data
@@ -21,6 +23,7 @@ export default function Home() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState({ start: "", end: "" });
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [clickedEvent, setClickedEvent] = useState(null);
   const [eventModalVisible, setEventModalVisible] = useState(false);
   const [comment, setComment] = useState("");
 
@@ -33,6 +36,8 @@ export default function Home() {
 
   //Manager view
   const [allVacations, setAllVacations] = useState([]);
+
+  moment.locale("nb");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -498,7 +503,7 @@ export default function Home() {
       setApprovalModalVisible(true);
     } else {
       // Store the clicked event's information
-      setSelectedEvent({
+      setClickedEvent({
         id: event.id,
         title: event.title,
         start: event.start,
@@ -517,10 +522,9 @@ export default function Home() {
 
   return (
     <main>
-      {/* Conditional rendering for managers */}
-      <div className="flex justify-between items-center my-4 w-[80%] mx-auto">
+      <div className="flex justify-between items-center my-4 w-[90%] md:w-[80%] mx-auto">
         <div>
-          <h1 className="text-3xl font-bold text-center">{activeView === "Calendar" ? "Vacation Calendar" : "Manager Calendar"}</h1>
+          <h1 className="md:text-3xl font-bold text-center">{activeView === "Calendar" ? "My Vacations" : "Manager Calendar"}</h1>
         </div>
         <div className="flex justify-center">
           {isManager && (
@@ -537,7 +541,7 @@ export default function Home() {
       </div>
 
       {activeView === "Calendar" && (
-        <div className="w-[80%] mx-auto">
+        <div className="w-[95%] md:w-[80%] mx-auto">
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -552,7 +556,7 @@ export default function Home() {
             editable={true} // Allows dragging and resizing events
             selectable={true} // Allows selecting time slots
             selectMirror={true} // Temporary display of the selected area
-            dayMaxEvents={true} // More events will cause a "+ more" link to display
+            dayMaxEvents={false} // More events will cause a "+ more" link to display
             select={handleSelect}
             eventClick={handleEventClick}
             firstDay={1}
@@ -576,8 +580,8 @@ export default function Home() {
                       </p>
                       <div className="flex items-center justify-center bg-gray-100 p-2 rounded">
                         <p className="text-sm font-semibold">
-                          {new Date(selectedDate.start).toLocaleDateString([], { timeZone: "UTC" })} -{" "}
-                          {new Date(selectedDate.end).toLocaleDateString([], { timeZone: "UTC" })}
+                          {moment(selectedDate?.start).tz("Europe/Oslo").format("Do MMMM YYYY")} -{" "}
+                          {moment(selectedDate?.end).tz("Europe/Oslo").format("Do MMMM YYYY")}
                         </p>
                       </div>
                     </div>
@@ -641,11 +645,11 @@ export default function Home() {
                       </div>
                       <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                         <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                          {selectedEvent?.title}
+                          {clickedEvent?.title}
                         </h3>
                         <div className="mt-2">
-                          <p className="text-sm text-gray-500">Start: {moment(selectedEvent?.start).format("YYYY-MM-DD HH:mm")}</p>
-                          <p className="text-sm text-gray-500">End: {moment(selectedEvent?.end).format("YYYY-MM-DD HH:mm")}</p>
+                          <p className="text-sm text-gray-500">Start: {moment(clickedEvent?.start).tz("Europe/Oslo").format("Do MMMM YYYY")}</p>
+                          <p className="text-sm text-gray-500">End: {moment(clickedEvent?.end).tz("Europe/Oslo").format("Do MMMM YYYY")}</p>
                         </div>
                       </div>
                     </div>
@@ -669,7 +673,7 @@ export default function Home() {
 
       {activeView === "Manager" && (
         <div>
-          <div className="w-[80%] mx-auto">
+          <div className="w-[95%] md:w-[80%] mx-auto">
             <FullCalendar
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
@@ -680,7 +684,7 @@ export default function Home() {
               }}
               height="80vh"
               events={allVacations}
-              dayMaxEvents={true}
+              dayMaxEvents={false}
               eventClick={handleEventClick}
               firstDay={1}
             />

@@ -34,6 +34,10 @@ body {
   margin-bottom: 0;
 }
 
+.fc-event-time {
+  display: none;
+}
+
 @media only screen and (max-width: 768px) {
   .fc-header-toolbar {
     flex-direction: row;
@@ -80,7 +84,7 @@ body {
   background: hsla(0, 0%, 82%, 0.3) !important;
 }
 .fc-event-main-frame {
-  color: black;
+  /* color: white; */
 }
 
 @media screen and (max-width: 480px) {

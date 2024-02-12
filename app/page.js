@@ -187,32 +187,43 @@ export default function Home() {
                 let statusValue = statusProperty ? statusProperty.value : "Unknown";
 
                 let color;
+                let textColor;
                 switch (
                   statusValue.toLowerCase() // Case-insensitive matching
                 ) {
                   case "rejected":
                     color = "red";
+                    textColor = "white";
                     break;
                   case "approved":
                     color = "green";
+                    textColor = "white";
                     break;
                   case "requested":
                     color = "orange";
+                    textColor = "white";
                     break;
                   default:
                     console.log(`Unhandled status: ${statusValue}`);
                     color = "grey"; // Fallback color
+                    textColor = "white";
                     break;
                 }
                 return {
                   id: event.id,
                   title: statusValue + " vacation",
                   start: event.propertyValues.find((property) => property.definition.id === 12673261).value,
-                  end: event.propertyValues.find((property) => property.definition.id === 12673262).value,
+                  // end: event.propertyValues.find((property) => property.definition.id === 12673262).value,
+                  // end: moment(event.propertyValues.find((property) => property.definition.id === 12673262).value).format("YYYY-MM-DDT23:59:59"),
+                  end: moment(event.propertyValues.find((property) => property.definition.id === 12673262).value)
+                    .set({ hour: 23, minute: 59, second: 59 })
+                    .format("YYYY-MM-DDTHH:mm:ssZZ"),
                   color: color, // Add the color property here
+                  textColor: textColor,
                   status: statusValue, // For debugging
                   comment: event.propertyValues.find((property) => property.definition.id === 12673263).value,
-                  allDay: true,
+                  allDay: false,
+                  name: event.name,
                 };
               });
             setEvents(filteredEvents);
@@ -221,7 +232,9 @@ export default function Home() {
         })
         .catch((err) => console.error(err));
     }
-  }, [myUser]);
+  }, [myUser, activeView]);
+
+  console.log("events", events);
 
   // Manager View Calls
 
@@ -238,6 +251,7 @@ export default function Home() {
 
   useEffect(() => {
     if (isManager) {
+      setAllVacations("");
       managedUsers.map((user) => {
         fetch(`https://e2e-tm-prod-services.nsg-e2e.com/api/items/list/ItemLinks/${user.id}?filter=0`, {
           method: "GET",
@@ -258,17 +272,21 @@ export default function Home() {
                   let statusValue = statusProperty ? statusProperty.value : "Unknown";
 
                   let color;
+                  let textColor;
                   switch (
                     statusValue.toLowerCase() // Case-insensitive matching
                   ) {
                     case "rejected":
                       color = "red";
+                      textColor = "white";
                       break;
                     case "approved":
                       color = "green";
+                      textColor = "white";
                       break;
                     case "requested":
                       color = "orange";
+                      textColor = "white";
                       break;
                     default:
                       console.log(`Unhandled status: ${statusValue}`);
@@ -279,11 +297,15 @@ export default function Home() {
                     id: event.id,
                     title: event.name,
                     start: event.propertyValues.find((property) => property.definition.id === 12673261).value,
-                    end: event.propertyValues.find((property) => property.definition.id === 12673262).value,
+                    // end: event.propertyValues.find((property) => property.definition.id === 12673262).value,
+                    end: moment(event.propertyValues.find((property) => property.definition.id === 12673262).value)
+                      .set({ hour: 23, minute: 59, second: 59 })
+                      .format("YYYY-MM-DDTHH:mm:ssZZ"),
                     color: color, // Add the color property here
+                    textColor: textColor,
                     status: statusValue, // For debugging
                     comment: event.propertyValues.find((property) => property.definition.id === 12673263).value,
-                    allDay: true,
+                    allDay: false,
                   };
                 });
               setAllVacations((prev) => [...prev, ...filteredEvents]);
@@ -293,7 +315,7 @@ export default function Home() {
           .catch((err) => console.error(err));
       });
     }
-  }, [allUsers]);
+  }, [allUsers, activeView]);
 
   // Update the property with the property Api
   const handleManagerAccept = (id, status, comment) => {
@@ -363,9 +385,18 @@ export default function Home() {
   };
 
   const handleSelect = (arg) => {
-    // Format start and end dates using moment-timezone
+    // Start date remains the same
     const formattedStartDate = moment.tz(arg.startStr, "Europe/Oslo").format("YYYY-MM-DDTHH:mm:ssZZ");
-    const formattedEndDate = moment.tz(arg.endStr, "Europe/Oslo").format("YYYY-MM-DDTHH:mm:ssZZ");
+
+    // Adjust the end date to be inclusive for display purposes
+    let formattedEndDate = moment.tz(arg.endStr, "Europe/Oslo");
+
+    // Check if the end date is at the start of a new day (00:00) and adjust
+    if (arg.allDay && formattedEndDate.format("HH:mm:ss") === "00:00:00") {
+      formattedEndDate = formattedEndDate.subtract(1, "days");
+    }
+
+    formattedEndDate = formattedEndDate.format("YYYY-MM-DDTHH:mm:ssZZ");
 
     setSelectedDate({ start: formattedStartDate, end: formattedEndDate });
     setModalVisible(true);
@@ -537,6 +568,27 @@ export default function Home() {
     setModalVisible(false);
   };
 
+  // Function to calculate total vacation days used
+  const calculateVacationDaysUsed = () => {
+    const currentYear = moment().year();
+    return events.reduce((total, event) => {
+      if (event.status === "Approved" && moment(event.start).year() === currentYear) {
+        // Subtract one day from the difference since the end date is exclusive
+        const days = moment(event.end).diff(moment(event.start), "days").valueOf() + 1;
+        return total + days;
+      }
+      return total;
+    }, 0);
+  };
+
+  // Filter for upcoming and ongoing vacations
+  const upcomingAndOngoingVacations = events.filter((event) => {
+    const start = moment(event.start);
+    const end = moment(event.end);
+    const today = moment();
+    return (start.isSameOrAfter(today, "day") || end.isSameOrAfter(today, "day")) && (event.status === "Approved" || event.status === "Requested");
+  });
+
   return (
     <main>
       <div className="flex justify-between items-center my-4 w-[90%] md:w-[80%] mx-auto">
@@ -558,133 +610,189 @@ export default function Home() {
       </div>
 
       {activeView === "Calendar" && (
-        <div className="w-[95%] md:w-[80%] mx-auto">
-          <FullCalendar
-            ref={calendarRef}
-            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            initialView="dayGridMonth"
-            headerToolbar={{
-              left: "prev,next today",
-              center: "title",
-              right: "dayGridMonth,timeGridWeek,timeGridDay",
-            }}
-            height="80vh"
-            events={events}
-            editable={true} // Allows dragging and resizing events
-            selectable={true} // Allows selecting time slots
-            selectMirror={true} // Temporary display of the selected area
-            dayMaxEvents={false} // More events will cause a "+ more" link to display
-            select={handleSelect}
-            eventClick={handleEventClick}
-            firstDay={1}
-          />
-          {/* Modal for date selection */}
-          {modalVisible && (
-            <div className="fixed inset-0 z-50 overflow-y-auto">
-              <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                <div className="fixed inset-0 transition-opacity">
-                  <div className="absolute inset-0 bg-gray-900 opacity-75"></div>
-                </div>
-                <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
-                  &#8203;
-                </span>
-                <div className="inline-block align-bottom bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                  <div className="px-4 py-5 sm:px-6">
-                    <h2 className="text-lg font-bold mb-4">Request Vacation</h2>
-                    <div>
-                      <p className="text-sm mb-2">
-                        <span className="font-semibold">Selected Date:</span>
-                      </p>
-                      <div className="flex items-center justify-center bg-gray-100 p-2 rounded">
-                        <p className="text-sm font-semibold">
-                          {moment(selectedDate?.start).tz("Europe/Oslo").format("Do MMMM YYYY")} -{" "}
-                          {moment(selectedDate?.end).tz("Europe/Oslo").format("Do MMMM YYYY")}
-                        </p>
-                      </div>
-                    </div>
-                    <textarea
-                      className="border border-gray-300 w-full mt-4 p-2"
-                      placeholder="Add a comment..."
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                    />
+        <div>
+          <div className="w-[95%] md:w-[80%] mx-auto">
+            <FullCalendar
+              ref={calendarRef}
+              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+              initialView="dayGridMonth"
+              headerToolbar={{
+                left: "prev,next today",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek,timeGridDay",
+              }}
+              height="80vh"
+              events={events}
+              editable={true} // Allows dragging and resizing events
+              selectable={true} // Allows selecting time slots
+              selectMirror={true} // Temporary display of the selected area
+              dayMaxEvents={false} // More events will cause a "+ more" link to display
+              select={handleSelect}
+              eventClick={handleEventClick}
+              firstDay={1}
+              buttonText={{
+                today: "Today",
+                month: "Month",
+                week: "Week",
+                year: "Year",
+              }}
+            />
+
+            {/* Modal for date selection */}
+            {modalVisible && (
+              <div className="fixed inset-0 z-50 overflow-y-auto">
+                <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                  <div className="fixed inset-0 transition-opacity">
+                    <div className="absolute inset-0 bg-gray-900 opacity-75"></div>
                   </div>
-                  <div className="px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                    <button
-                      className="w-full sm:w-auto inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 mr-2 mb-2 sm:mb-0"
-                      onClick={handleSend}
-                    >
-                      Send
-                    </button>
-                    <button
-                      className="w-full sm:w-auto inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 mb-2 sm:mb-0"
-                      onClick={handleCancel}
-                    >
-                      Cancel
-                    </button>
+                  <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
+                    &#8203;
+                  </span>
+                  <div className="inline-block align-bottom bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <div className="px-4 py-5 sm:px-6">
+                      <h2 className="text-lg font-bold mb-4">Request Vacation</h2>
+                      <div>
+                        <p className="text-sm mb-2">
+                          <span className="font-semibold">Selected Date:</span>
+                        </p>
+                        <div className="flex items-center justify-center bg-gray-100 p-2 rounded">
+                          <p className="text-sm font-semibold">
+                            {moment(selectedDate?.start).tz("Europe/Oslo").format("Do MMMM YYYY")} -{" "}
+                            {moment(selectedDate?.end).tz("Europe/Oslo").format("Do MMMM YYYY")}
+                          </p>
+                        </div>
+                      </div>
+                      <textarea
+                        className="border border-gray-300 w-full mt-4 p-2"
+                        placeholder="Add a comment..."
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                      />
+                    </div>
+                    <div className="px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                      <button
+                        className="w-full sm:w-auto inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 mr-2 mb-2 sm:mb-0"
+                        onClick={handleSend}
+                      >
+                        Send
+                      </button>
+                      <button
+                        className="w-full sm:w-auto inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 mb-2 sm:mb-0"
+                        onClick={handleCancel}
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-          {eventModalVisible && (
-            <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-              <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                {/* Background overlay, animated */}
-                <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            )}
+            {eventModalVisible && (
+              <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                  {/* Background overlay, animated */}
+                  <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
 
-                {/* This element is to trick the browser into centering the modal contents. */}
-                <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
-                  &#8203;
-                </span>
+                  {/* This element is to trick the browser into centering the modal contents. */}
+                  <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
+                    &#8203;
+                  </span>
 
-                {/* Modal panel, centered with animation */}
-                <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                  <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                    <div className="sm:flex sm:items-start">
-                      <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-                        {/* Icon */}
-                        <svg
-                          className="h-6 w-6 text-blue-600"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          aria-hidden="true"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                      </div>
-                      <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                        <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                          {clickedEvent?.title}
-                        </h3>
-                        <div className="mt-2">
-                          <p className="text-sm text-gray-500">Start: {moment(clickedEvent?.start).tz("Europe/Oslo").format("Do MMMM YYYY")}</p>
-                          <p className="text-sm text-gray-500">End: {moment(clickedEvent?.end).tz("Europe/Oslo").format("Do MMMM YYYY")}</p>
+                  {/* Modal panel, centered with animation */}
+                  <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                      <div className="sm:flex sm:items-start">
+                        <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                          {/* Icon */}
+                          <svg
+                            className="h-6 w-6 text-blue-600"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            aria-hidden="true"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                        </div>
+                        <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                          <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                            {clickedEvent?.title}
+                          </h3>
+                          <div className="mt-2">
+                            <p className="text-sm text-gray-500">Start: {moment(clickedEvent?.start).tz("Europe/Oslo").format("Do MMMM YYYY")}</p>
+                            <p className="text-sm text-gray-500">End: {moment(clickedEvent?.end).tz("Europe/Oslo").format("Do MMMM YYYY")}</p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                    <button
-                      type="button"
-                      onClick={() => setEventModalVisible(false)}
-                      className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
-                    >
-                      Close
-                    </button>
-                    {/* Additional buttons or actions can be added here */}
+                    <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                      <button
+                        type="button"
+                        onClick={() => setEventModalVisible(false)}
+                        className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                      >
+                        Close
+                      </button>
+                      {/* Additional buttons or actions can be added here */}
+                    </div>
                   </div>
                 </div>
               </div>
+            )}
+          </div>
+          <div className="mt-40 mb-10 w-[80%] mx-auto">
+            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+              <div className="px-4 py-5 sm:px-6">
+                <h2 className="text-2xl leading-6 font-medium text-gray-900">Vacation Summary</h2>
+                <p className="mt-1 max-w-2xl text-sm text-gray-500">Details of your vacation plans.</p>
+              </div>
+              <div className="border-t border-gray-200 px-4 py-5 sm:p-0">
+                <dl className="sm:divide-y sm:divide-gray-200">
+                  <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500 ml-4">Total Vacation Days Used This Year</dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{calculateVacationDaysUsed()}/25 days</dd>
+                  </div>
+                  <div className="py-4 mr-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
+                    <dt className="text-sm font-medium text-gray-500 ml-4">Upcoming and Ongoing Vacations</dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                      <ul className="border border-gray-200 rounded-md divide-y divide-gray-200">
+                        {upcomingAndOngoingVacations.map((vacation, index) => (
+                          <li key={index} className="pl-3 pr-4 py-3 flex items-center justify-between text-sm">
+                            <div className="w-0 flex-1 flex items-center">
+                              <span className="flex-1 w-0 truncate">
+                                {moment(vacation.start).format("LL")} - {moment(vacation.end).format("LL")}
+                              </span>
+                            </div>
+                            <div className="ml-4 flex-shrink-0">
+                              <span
+                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-${vacation.color}-100 text-${vacation.color}-800`}
+                              >
+                                {vacation.status}
+                              </span>
+                            </div>
+                            {vacation.comment && (
+                              <div className="ml-4 flex-shrink-0 flex items-center text-sm text-gray-500">
+                                <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H7.414A2 2 0 006 17.414l-4-4A2 2 0 012 11V5z" />
+                                </svg>
+                                {vacation.comment}
+                              </div>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </dd>
+                  </div>
+                </dl>
+              </div>
             </div>
-          )}
+          </div>
         </div>
       )}
 
@@ -705,6 +813,12 @@ export default function Home() {
               dayMaxEvents={false}
               eventClick={handleEventClick}
               firstDay={1}
+              buttonText={{
+                today: "Today",
+                month: "Month",
+                week: "Week",
+                year: "Year",
+              }}
             />
           </div>
           {approvalModalVisible && (

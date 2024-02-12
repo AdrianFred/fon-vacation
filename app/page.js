@@ -5,6 +5,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import toast from "react-hot-toast";
 import moment from "moment-timezone";
 import "moment/locale/nb";
 import "moment-timezone";
@@ -332,7 +333,7 @@ export default function Home() {
         return response.json();
       })
       .then((data) => {
-        console.log("Success:", data);
+        toast.success("Request has been updated successfully");
 
         setApprovalModalVisible(false);
         setApprovalEvent(null);

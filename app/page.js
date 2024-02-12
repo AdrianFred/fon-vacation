@@ -517,10 +517,11 @@ export default function Home() {
             calendarRef.current.getApi().addEvent({
               title: myUser[0].name,
               start: selectedDate.start,
-              end: selectedDate.end,
+              // end: selectedDate.end,
+              end: moment(selectedDate.end).format("YYYY-MM-DDT23:59:59"),
               color: "orange",
               status: "requested",
-              fullDay: true,
+              fullDay: false,
             });
 
             // Close the modal

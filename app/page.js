@@ -38,6 +38,7 @@ export default function Home() {
 
   //Manager view
   const [allVacations, setAllVacations] = useState([]);
+  const [testData, setTestData] = useState([]);
 
   moment.locale("nb");
 
@@ -254,6 +255,7 @@ export default function Home() {
   useEffect(() => {
     if (isManager) {
       setAllVacations("");
+      setTestData("");
       managedUsers.map((user) => {
         fetch(`https://e2e-tm-prod-services.nsg-e2e.com/api/items/list/ItemLinks/${user.id}?filter=0`, {
           method: "GET",
@@ -311,6 +313,7 @@ export default function Home() {
                   };
                 });
               setAllVacations((prev) => [...prev, ...filteredEvents]);
+              setTestData((prev) => [...prev, ...data.childItems]);
               console.log("filtered events with color and status", filteredEvents);
             }
           })
@@ -318,6 +321,8 @@ export default function Home() {
       });
     }
   }, [allUsers, activeView]);
+
+  console.log("testdata", testData);
 
   // Update the property with the property Api
   const handleManagerAccept = (id, status, comment) => {
@@ -403,8 +408,6 @@ export default function Home() {
     setSelectedDate({ start: formattedStartDate, end: formattedEndDate });
     setModalVisible(true);
   };
-
-  console.log("myUser", myUser);
 
   const handleSend = () => {
     // Send the POST request
@@ -542,7 +545,6 @@ export default function Home() {
   };
 
   const handleEventClick = ({ event }) => {
-    console.log("eventeeeeeeeeeeeeeeeeeeeeee", event);
     if (activeView === "Manager") {
       setApprovalEvent({
         id: event.id,
@@ -603,105 +605,249 @@ export default function Home() {
     );
   }
 
+  console.log("allevents", allVacations);
+
   return (
-    <main>
-      <div className="flex justify-between items-center my-4 w-[90%] md:w-[80%] mx-auto">
-        <div>
-          <h1 className="md:text-3xl font-bold text-center">{activeView === "Calendar" ? "My Vacations" : "Manager Calendar"}</h1>
+    <main className="pb-8 pt-4">
+      <div className="bg-white shadow  rounded-lg py-2 md:w-[85%] w-[95%] mx-auto">
+        <div className="flex justify-between items-center my-2 w-[99%] md:w-[95%] mx-auto">
+          <div>
+            <h1 className="md:text-3xl font-bold text-center">{activeView === "Calendar" ? "My Vacations" : "Manager Calendar"}</h1>
+          </div>
+          <div className="flex justify-center">
+            {isManager && (
+              <button
+                className={`py-2 px-4 bg-gray-700 text-white rounded-md shadow-md transition duration-300 hover:bg-gray-800 ${
+                  activeView === "Manager" ? "bg-blue-500 hover:bg-blue-600" : ""
+                }`}
+                onClick={toggleView}
+              >
+                {activeView === "Manager" ? "Calendar View" : "Manager View"}
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex justify-center">
-          {isManager && (
-            <button
-              className={`py-2 px-4 bg-gray-700 text-white rounded-md shadow-md transition duration-300 hover:bg-gray-800 ${
-                activeView === "Manager" ? "bg-blue-500 hover:bg-blue-600" : ""
-              }`}
-              onClick={toggleView}
-            >
-              {activeView === "Manager" ? "Calendar View" : "Manager View"}
-            </button>
-          )}
-        </div>
-      </div>
 
-      {activeView === "Calendar" && (
-        <div>
-          <div className="w-[95%] md:w-[80%] mx-auto">
-            <FullCalendar
-              ref={calendarRef}
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView="dayGridMonth"
-              headerToolbar={{
-                left: "prev,next today",
-                center: "title",
-                right: "dayGridMonth,timeGridWeek,timeGridDay",
-              }}
-              height="80vh"
-              events={events}
-              editable={true} // Allows dragging and resizing events
-              selectable={true} // Allows selecting time slots
-              selectMirror={true} // Temporary display of the selected area
-              dayMaxEvents={false} // More events will cause a "+ more" link to display
-              select={handleSelect}
-              eventClick={handleEventClick}
-              firstDay={1}
-              buttonText={{
-                today: "Today",
-                month: "Month",
-                week: "Week",
-                year: "Year",
-              }}
-            />
+        {activeView === "Calendar" && (
+          <div>
+            <div className="w-[99%] md:w-[95%] mx-auto bg-white h-auto">
+              <FullCalendar
+                ref={calendarRef}
+                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                initialView="dayGridMonth"
+                headerToolbar={{
+                  left: "prev,next today",
+                  center: "title",
+                  right: "dayGridMonth,timeGridWeek,timeGridDay",
+                }}
+                height="auto"
+                events={events}
+                editable={true} // Allows dragging and resizing events
+                selectable={true} // Allows selecting time slots
+                selectMirror={true} // Temporary display of the selected area
+                dayMaxEvents={false} // More events will cause a "+ more" link to display
+                select={handleSelect}
+                eventClick={handleEventClick}
+                firstDay={1}
+                buttonText={{
+                  today: "Today",
+                  month: "Month",
+                  week: "Week",
+                  year: "Year",
+                }}
+              />
 
-            {/* Modal for date selection */}
-            {modalVisible && (
-              <div className="fixed inset-0 z-50 overflow-y-auto">
-                <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                  <div className="fixed inset-0 transition-opacity">
-                    <div className="absolute inset-0 bg-gray-900 opacity-75"></div>
+              {/* Modal for date selection */}
+              {modalVisible && (
+                <div className="fixed inset-0 z-50 overflow-y-auto">
+                  <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                    <div className="fixed inset-0 transition-opacity">
+                      <div className="absolute inset-0 bg-gray-900 opacity-75"></div>
+                    </div>
+                    <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
+                      &#8203;
+                    </span>
+                    <div className="inline-block align-bottom bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                      <div className="px-4 py-5 sm:px-6">
+                        <h2 className="text-lg font-bold mb-4">Request Vacation</h2>
+                        <div>
+                          <p className="text-sm mb-2">
+                            <span className="font-semibold">Selected Date:</span>
+                          </p>
+                          <div className="flex items-center justify-center p-2 rounded">
+                            <input
+                              type="date"
+                              className="text-sm font-semibold border border-gray-300 rounded p-2"
+                              value={moment(selectedDate.start).format("YYYY-MM-DD")} // Convert to 'YYYY-MM-DD' format for input[type=date]
+                              onChange={(e) => setSelectedDate({ ...selectedDate, start: moment(e.target.value).tz("Europe/Oslo").format() })} // Update start date
+                            />
+                            <span className="mx-2">-</span>
+                            <input
+                              type="date"
+                              className="text-sm font-semibold border border-gray-300 rounded p-2"
+                              value={moment(selectedDate.end).format("YYYY-MM-DD")} // Convert to 'YYYY-MM-DD' format
+                              onChange={(e) => setSelectedDate({ ...selectedDate, end: moment(e.target.value).tz("Europe/Oslo").format() })} // Update end date
+                            />
+                          </div>
+                        </div>
+                        <textarea
+                          className="border border-gray-300 w-full mt-4 p-2"
+                          placeholder="Add a comment..."
+                          value={comment}
+                          onChange={(e) => setComment(e.target.value)}
+                        />
+                      </div>
+                      <div className="px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-4">
+                        <button
+                          className="w-full sm:w-auto inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 mr-2 mb-2 sm:mb-0"
+                          onClick={handleSend}
+                        >
+                          Send
+                        </button>
+                        <button
+                          className="w-full sm:w-auto inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 mb-2 sm:mb-0"
+                          onClick={handleCancel}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
-                    &#8203;
-                  </span>
-                  <div className="inline-block align-bottom bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                    <div className="px-4 py-5 sm:px-6">
-                      <h2 className="text-lg font-bold mb-4">Request Vacation</h2>
-                      <div>
-                        <p className="text-sm mb-2">
-                          <span className="font-semibold">Selected Date:</span>
-                        </p>
-                        <div className="flex items-center justify-center p-2 rounded">
-                          <input
-                            type="date"
-                            className="text-sm font-semibold border border-gray-300 rounded p-2"
-                            value={moment(selectedDate.start).format("YYYY-MM-DD")} // Convert to 'YYYY-MM-DD' format for input[type=date]
-                            onChange={(e) => setSelectedDate({ ...selectedDate, start: moment(e.target.value).tz("Europe/Oslo").format() })} // Update start date
-                          />
-                          <span className="mx-2">-</span>
-                          <input
-                            type="date"
-                            className="text-sm font-semibold border border-gray-300 rounded p-2"
-                            value={moment(selectedDate.end).format("YYYY-MM-DD")} // Convert to 'YYYY-MM-DD' format
-                            onChange={(e) => setSelectedDate({ ...selectedDate, end: moment(e.target.value).tz("Europe/Oslo").format() })} // Update end date
-                          />
+                </div>
+              )}
+              {eventModalVisible && (
+                <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                  <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                    {/* Background overlay, animated */}
+                    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+                    {/* This element is to trick the browser into centering the modal contents. */}
+                    <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
+                      &#8203;
+                    </span>
+
+                    {/* Modal panel, centered with animation */}
+                    <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                      <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div className="sm:flex sm:items-start">
+                          <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                            {/* Icon */}
+                            <svg
+                              className="h-6 w-6 text-blue-600"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              aria-hidden="true"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                          </div>
+                          <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                            <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                              {clickedEvent?.title}
+                            </h3>
+                            <div className="mt-2">
+                              <p className="text-sm text-gray-500">Start: {moment(clickedEvent?.start).tz("Europe/Oslo").format("Do MMMM YYYY")}</p>
+                              <p className="text-sm text-gray-500">End: {moment(clickedEvent?.end).tz("Europe/Oslo").format("Do MMMM YYYY")}</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <textarea
-                        className="border border-gray-300 w-full mt-4 p-2"
-                        placeholder="Add a comment..."
-                        value={comment}
-                        onChange={(e) => setComment(e.target.value)}
-                      />
+                      <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button
+                          type="button"
+                          onClick={() => setEventModalVisible(false)}
+                          className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                        >
+                          Close
+                        </button>
+                        {/* Additional buttons or actions can be added here */}
+                      </div>
                     </div>
-                    <div className="px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-4">
-                      <button
-                        className="w-full sm:w-auto inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 mr-2 mb-2 sm:mb-0"
-                        onClick={handleSend}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        {activeView === "Manager" && (
+          <div>
+            <div className="w-[99%] md:w-[95%] mx-auto bg-white h-auto">
+              <FullCalendar
+                ref={calendarRef}
+                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                initialView="dayGridMonth"
+                headerToolbar={{
+                  left: "prev,next today",
+                  center: "title",
+                  right: "dayGridMonth,timeGridWeek,timeGridDay",
+                }}
+                height="auto"
+                events={allVacations}
+                dayMaxEvents={false}
+                eventClick={handleEventClick}
+                firstDay={1}
+                buttonText={{
+                  today: "Today",
+                  month: "Month",
+                  week: "Week",
+                  year: "Year",
+                }}
+              />
+            </div>
+            {approvalModalVisible && (
+              <div className="fixed inset-0 z-50 overflow-y-auto">
+                <div className="flex items-center justify-center min-h-screen">
+                  <div className="bg-gray-500 bg-opacity-75 fixed inset-0"></div>
+                  <div className="bg-white rounded-lg overflow-hidden shadow-xl transform transition-all max-w-lg w-full p-5">
+                    <h3 className="text-lg font-medium text-gray-900">Manage Request</h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">Title: {approvalEvent?.title}</p>
+                      <p className="text-sm text-gray-500">From: {moment(approvalEvent?.start).tz("Europe/Oslo").format("DD.MM.YYYY")}</p>
+                      <p className="text-sm text-gray-500">To: {moment(approvalEvent?.end).tz("Europe/Oslo").format("DD.MM.YYYY")}</p>
+                      <label htmlFor="status" className="block text-sm font-medium text-gray-700 mt-4">
+                        Status
+                      </label>
+                      <select
+                        id="status"
+                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                        defaultValue={approvalEvent?.status}
+                        onChange={(e) => setApprovalEvent((prev) => ({ ...prev, status: e.target.value }))}
                       >
-                        Send
+                        <option value="" disabled>
+                          Select status
+                        </option>
+                        <option value="Requested">Requested</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
+                      </select>
+
+                      <textarea
+                        className="mt-4 p-2 w-full border rounded shadow-sm"
+                        placeholder="Add a comment (optional)"
+                        onChange={(e) => setApprovalEvent((prev) => ({ ...prev, comment: e.target.value }))}
+                        value={approvalEvent?.comment || ""}
+                      ></textarea>
+                    </div>
+                    <div className="mt-4 flex justify-end">
+                      <button
+                        className="inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+                        onClick={() => {
+                          console.log("approvalEvent", approvalEvent);
+                          handleManagerAccept(approvalEvent?.id, approvalEvent?.status, approvalEvent?.comment), setApprovalModalVisible(false);
+                        }}
+                      >
+                        Confirm
                       </button>
                       <button
-                        className="w-full sm:w-auto inline-block px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 mb-2 sm:mb-0"
-                        onClick={handleCancel}
+                        className="ml-3 inline-flex justify-center rounded-md border border-gray-300 px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                        onClick={() => setApprovalModalVisible(false)}
                       >
                         Cancel
                       </button>
@@ -710,195 +856,57 @@ export default function Home() {
                 </div>
               </div>
             )}
-            {eventModalVisible && (
-              <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-                <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                  {/* Background overlay, animated */}
-                  <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+          </div>
+        )}
+      </div>
 
-                  {/* This element is to trick the browser into centering the modal contents. */}
-                  <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
-                    &#8203;
-                  </span>
-
-                  {/* Modal panel, centered with animation */}
-                  <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                    <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                      <div className="sm:flex sm:items-start">
-                        <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-                          {/* Icon */}
-                          <svg
-                            className="h-6 w-6 text-blue-600"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            aria-hidden="true"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
-                        </div>
-                        <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                          <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                            {clickedEvent?.title}
-                          </h3>
-                          <div className="mt-2">
-                            <p className="text-sm text-gray-500">Start: {moment(clickedEvent?.start).tz("Europe/Oslo").format("Do MMMM YYYY")}</p>
-                            <p className="text-sm text-gray-500">End: {moment(clickedEvent?.end).tz("Europe/Oslo").format("Do MMMM YYYY")}</p>
+      {activeView === "Calendar" && (
+        <div className="mt-20 w-[95%] md:w-[85%] mx-auto">
+          <div className="bg-white shadow overflow-hidden rounded-lg sm:rounded-lg">
+            <div className="px-4 py-5 sm:px-6">
+              <h2 className="text-2xl leading-6 font-medium text-gray-900">Vacation Summary</h2>
+              <p className="mt-1 max-w-2xl text-sm text-gray-500">Details of your vacation plans.</p>
+            </div>
+            <div className="border-t border-gray-200 px-4 py-5 sm:p-0">
+              <dl className="sm:divide-y sm:divide-gray-200">
+                <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
+                  <dt className="text-sm font-medium text-gray-500 ml-4">Total Vacation Days Used This Year</dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{calculateVacationDaysUsed()}/25 days</dd>
+                </div>
+                <div className="py-4 mr-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
+                  <dt className="text-sm font-medium text-gray-500 ml-4">Upcoming and Ongoing Vacations</dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                    <ul className="border border-gray-200 rounded-md divide-y divide-gray-200">
+                      {upcomingAndOngoingVacations.map((vacation, index) => (
+                        <li key={index} className="pl-3 pr-4 py-3 flex items-center justify-between text-sm">
+                          <div className="w-0 flex-1 flex items-center">
+                            <span className="flex-1 w-0 truncate">
+                              {moment(vacation.start).format("LL")} - {moment(vacation.end).format("LL")}
+                            </span>
                           </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                      <button
-                        type="button"
-                        onClick={() => setEventModalVisible(false)}
-                        className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
-                      >
-                        Close
-                      </button>
-                      {/* Additional buttons or actions can be added here */}
-                    </div>
-                  </div>
+                          <div className="ml-4 flex-shrink-0">
+                            <span
+                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-${vacation.color}-100 text-${vacation.color}-800`}
+                            >
+                              {vacation.status}
+                            </span>
+                          </div>
+                          {vacation.comment && (
+                            <div className="ml-4 flex-shrink-0 flex items-center text-sm text-gray-500">
+                              <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H7.414A2 2 0 006 17.414l-4-4A2 2 0 012 11V5z" />
+                              </svg>
+                              {vacation.comment}
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </dd>
                 </div>
-              </div>
-            )}
-          </div>
-          <div className="mt-40 mb-10 w-[80%] mx-auto">
-            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-              <div className="px-4 py-5 sm:px-6">
-                <h2 className="text-2xl leading-6 font-medium text-gray-900">Vacation Summary</h2>
-                <p className="mt-1 max-w-2xl text-sm text-gray-500">Details of your vacation plans.</p>
-              </div>
-              <div className="border-t border-gray-200 px-4 py-5 sm:p-0">
-                <dl className="sm:divide-y sm:divide-gray-200">
-                  <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
-                    <dt className="text-sm font-medium text-gray-500 ml-4">Total Vacation Days Used This Year</dt>
-                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{calculateVacationDaysUsed()}/25 days</dd>
-                  </div>
-                  <div className="py-4 mr-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
-                    <dt className="text-sm font-medium text-gray-500 ml-4">Upcoming and Ongoing Vacations</dt>
-                    <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                      <ul className="border border-gray-200 rounded-md divide-y divide-gray-200">
-                        {upcomingAndOngoingVacations.map((vacation, index) => (
-                          <li key={index} className="pl-3 pr-4 py-3 flex items-center justify-between text-sm">
-                            <div className="w-0 flex-1 flex items-center">
-                              <span className="flex-1 w-0 truncate">
-                                {moment(vacation.start).format("LL")} - {moment(vacation.end).format("LL")}
-                              </span>
-                            </div>
-                            <div className="ml-4 flex-shrink-0">
-                              <span
-                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-${vacation.color}-100 text-${vacation.color}-800`}
-                              >
-                                {vacation.status}
-                              </span>
-                            </div>
-                            {vacation.comment && (
-                              <div className="ml-4 flex-shrink-0 flex items-center text-sm text-gray-500">
-                                <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H7.414A2 2 0 006 17.414l-4-4A2 2 0 012 11V5z" />
-                                </svg>
-                                {vacation.comment}
-                              </div>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </dd>
-                  </div>
-                </dl>
-              </div>
+              </dl>
             </div>
           </div>
-        </div>
-      )}
-
-      {activeView === "Manager" && (
-        <div>
-          <div className="w-[95%] md:w-[80%] mx-auto">
-            <FullCalendar
-              ref={calendarRef}
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView="dayGridMonth"
-              headerToolbar={{
-                left: "prev,next today",
-                center: "title",
-                right: "dayGridMonth,timeGridWeek,timeGridDay",
-              }}
-              height="80vh"
-              events={allVacations}
-              dayMaxEvents={false}
-              eventClick={handleEventClick}
-              firstDay={1}
-              buttonText={{
-                today: "Today",
-                month: "Month",
-                week: "Week",
-                year: "Year",
-              }}
-            />
-          </div>
-          {approvalModalVisible && (
-            <div className="fixed inset-0 z-50 overflow-y-auto">
-              <div className="flex items-center justify-center min-h-screen">
-                <div className="bg-gray-500 bg-opacity-75 fixed inset-0"></div>
-                <div className="bg-white rounded-lg overflow-hidden shadow-xl transform transition-all max-w-lg w-full p-5">
-                  <h3 className="text-lg font-medium text-gray-900">Manage Request</h3>
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500">Title: {approvalEvent?.title}</p>
-                    <p className="text-sm text-gray-500">From: {moment(approvalEvent?.start).tz("Europe/Oslo").format("DD.MM.YYYY")}</p>
-                    <p className="text-sm text-gray-500">To: {moment(approvalEvent?.end).tz("Europe/Oslo").format("DD.MM.YYYY")}</p>
-                    <label htmlFor="status" className="block text-sm font-medium text-gray-700 mt-4">
-                      Status
-                    </label>
-                    <select
-                      id="status"
-                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                      defaultValue={approvalEvent?.status}
-                      onChange={(e) => setApprovalEvent((prev) => ({ ...prev, status: e.target.value }))}
-                    >
-                      <option value="" disabled>
-                        Select status
-                      </option>
-                      <option value="Requested">Requested</option>
-                      <option value="Approved">Approved</option>
-                      <option value="Rejected">Rejected</option>
-                    </select>
-
-                    <textarea
-                      className="mt-4 p-2 w-full border rounded shadow-sm"
-                      placeholder="Add a comment (optional)"
-                      onChange={(e) => setApprovalEvent((prev) => ({ ...prev, comment: e.target.value }))}
-                      value={approvalEvent?.comment || ""}
-                    ></textarea>
-                  </div>
-                  <div className="mt-4 flex justify-end">
-                    <button
-                      className="inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-                      onClick={() => {
-                        console.log("approvalEvent", approvalEvent);
-                        handleManagerAccept(approvalEvent?.id, approvalEvent?.status, approvalEvent?.comment), setApprovalModalVisible(false);
-                      }}
-                    >
-                      Confirm
-                    </button>
-                    <button
-                      className="ml-3 inline-flex justify-center rounded-md border border-gray-300 px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
-                      onClick={() => setApprovalModalVisible(false)}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </main>

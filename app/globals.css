@@ -25,6 +25,7 @@ body {
     )
     rgb(var(--background-start-rgb));
 } */
+
 .fc .fc-view-harness-active .fc-view > * {
   /* Prevents the view from scrolling on touch devices */
   height: 85vh;
@@ -125,4 +126,278 @@ body {
   100% {
     transform: rotate(360deg);
   }
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+/* General Styles for FullCalendar */
+.fc {
+  font-family: "Nunito", sans-serif;
+  /* Using Nunito font for a smoother appearance */
+  color: #4a4a4a;
+  /* Darker text color */
+}
+
+/* FullCalendar Header */
+.fc-header-toolbar {
+  /*background-color: #f8f9fa;*/
+  /* Bootstrap's light gray */
+  background-color: gainsboro;
+  border-radius: 5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  padding: 10px 15px;
+  /* Increased padding */
+  margin-bottom: 15px;
+  /* Margin between header and content */
+
+  /* position: sticky;
+  top: 0;
+  z-index: 1000; */
+}
+
+/* Button Styling */
+.fc-button {
+  border-radius: 5px;
+  transition: all 0.3s ease-in-out;
+  /* Smooth transition for all changes */
+  border: 1px solid #dee2e6;
+  /* Bootstrap's border color */
+}
+
+.fc-button-primary {
+  background-color: #007bff;
+  /* Bootstrap's primary color */
+  color: white;
+}
+
+.fc-button:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Timeline Slot Label Styling */
+.fc-col-header-cell {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  /* Slight bottom border */
+  padding: 10px;
+  /* Additional padding */
+}
+
+/* Resource Label Styling */
+.fc-resource-cell {
+  background-color: #e9ecef;
+  /* Bootstrap's secondary color */
+  border-right: 1px solid #f8f9fa;
+  /* Lighter right border for separation */
+  padding: 8px;
+  /* Additional padding */
+}
+
+/* Event Styling */
+.fc-event {
+  border-radius: 5px;
+  border: none;
+  padding: 5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  /* Shadow for 3D effect */
+  cursor: pointer;
+  /* Change cursor on hover for interactivity */
+}
+
+.fc-event:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  /* Increased shadow on hover */
+  transform: translateY(-2px);
+  /* Slight lift on hover */
+  transition: all 0.3s ease-in-out;
+}
+
+/* Today's Date Color */
+.fc-timeline-body .fc-today {
+  background-color: #e9ecef;
+}
+
+/* Timeline Row Separator */
+.fc-scrollgrid-section-body td {
+  border-top: 1px solid #f8f9fa;
+  /* Lighter top border for each resource row */
+}
+
+/* Scrollbar styling (only for webkit browsers) */
+.fc-scroller::-webkit-scrollbar {
+  width: 10px;
+}
+
+.fc-scroller::-webkit-scrollbar-track {
+  background: #f8f9fa;
+}
+
+.fc-scroller::-webkit-scrollbar-thumb {
+  background-color: #ced4da;
+  border-radius: 5px;
+}
+
+/* Increase the width of the day name columns */
+.fc-head .fc-time-area.fc-widget-header .fc-col {
+  width: 300px;
+  /* adjust as necessary */
+}
+
+.fc-timeline-slot-label {
+  min-width: 150px !important;
+}
+
+/* Styling for the rows */
+[role="row"] {
+  transition: all 0.3s ease-in-out;
+  /* Smooth transition for hover effects */
+  border-bottom: 1px solid #d4d4d4;
+  /* Light border for separation between rows */
+}
+
+[role="row"]:hover {
+  background-color: #f7f7f7;
+  /* A shade of grey on hover for better interactivity */
+}
+
+/* Styling the gridcell within the row */
+[role="row"] [role="gridcell"].fc-datagrid-cell,
+[role="gridcell"] {
+  border-bottom: 1px solid #e5e5e5;
+  /* Consistent light border for separation */
+}
+
+[role="gridcell"]:hover {
+  background-color: #f0f0f0;
+  /* Light background shade on hover */
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+  /* Inner shadow for a subtle depth effect */
+}
+
+/* Styling for the main name within the cell */
+[role="row"] .fc-datagrid-cell-main {
+  font-size: 15px;
+  /* Consistent font size */
+  font-weight: 500;
+  /* Semi-bold */
+  color: #333;
+  /* Dark grey for better readability */
+}
+
+/* Styling for the icon placeholder */
+[role="row"] .fc-datagrid-expander-placeholder .fc-icon {
+  color: #007bff;
+  /* Bootstrap's primary color */
+  margin-right: 10px;
+  /* Spacing between icon and name */
+}
+
+[role="gridcell"]:hover .fc-icon {
+  color: #333;
+  /* Even darker shade for icons on hover */
+}
+
+.card {
+  transition: 0.3s;
+  cursor: pointer;
+  color: #00c3dd;
+  background-color: #003137;
+}
+
+.card:hover {
+  box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary {
+  background-color: #00c3dd;
+  border: none;
+}
+
+#addEmployeeBtn {
+  position: fixed;
+  bottom: 300px;
+  right: 10px;
+  z-index: 100;
+}
+.selected-resource {
+  background-color: #add8e6;
+  /* Example color, change as needed */
+}
+.selected-resource:hover {
+  background-color: #add8e6;
+  /* Example color, change as needed */
+}
+
+@media screen and (max-width: 480px) {
+  .fc-toolbar.fc-header-toolbar {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .fc-toolbar.fc-header-toolbar .fc-toolbar-chunk:nth-child(1) {
+    order: 3;
+    margin-top: 5px;
+  }
+
+  .fc-toolbar.fc-header-toolbar .fc-toolbar-chunk:nth-child(2) {
+    order: 1;
+  }
+
+  .fc-toolbar.fc-header-toolbar .fc-toolbar-chunk:nth-child(3) {
+    order: 2;
+    margin-top: 5px;
+  }
+
+  #heading1 {
+    display: none !important;
+  }
+
+  #colorDiv {
+    display: none !important;
+  }
+
+  #calendar-container {
+    padding-top: 0px;
+    margin-top: 25px;
+  }
+
+  #calendar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin-top: 25px;
+    padding-bottom: 5%;
+    padding-left: 5%;
+    padding-right: 5%;
+  }
+
+  .fc-event-time {
+    display: none !important;
+  }
+
+  #navDiv {
+    text-decoration-line: underline;
+    text-align: end;
+    display: block !important;
+    width: 95%;
+  }
+
+  #logout {
+    display: block;
+    cursor: pointer;
+  }
+}
+
+.custom-timeline-bar {
+  position: absolute;
+  height: 100%;
+  background-color: #007bff;
+  /* Example color */
+  z-index: 2;
+  /* Ensure it appears above the row */
 }

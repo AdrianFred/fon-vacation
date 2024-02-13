@@ -13,7 +13,7 @@ import VacationTable from "./component/ManagerTable";
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
-  // Example events data
+
   const [events, setEvents] = useState([]);
   const [userId, setUserId] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
@@ -41,6 +41,8 @@ export default function Home() {
   const [allVacations, setAllVacations] = useState([]);
   const [testData, setTestData] = useState([]);
 
+  const baseUrl = "https://e2e-tm-prod-services.nsg-e2e.com";
+
   moment.locale("nb");
 
   useEffect(() => {
@@ -55,7 +57,7 @@ export default function Home() {
 
   useEffect(() => {
     if (userId && accessToken) {
-      fetch("https://e2e-tm-prod-services.nsg-e2e.com/api/users/me?ignoreErrors=true", {
+      fetch(`${baseUrl}/api/users/me?ignoreErrors=true`, {
         method: "GET",
         headers: {
           Authorization: accessToken,
@@ -75,7 +77,7 @@ export default function Home() {
 
     // Fetch projects id
     if (accessToken) {
-      fetch("https://e2e-tm-prod-services.nsg-e2e.com/api/projects?size=500&view=dropdown", {
+      fetch(`${baseUrl}/api/projects?size=500&view=dropdown`, {
         method: "GET",
         headers: {
           Authorization: accessToken,
@@ -95,11 +97,10 @@ export default function Home() {
         .catch((err) => console.error(err));
     }
   }, [userId, accessToken]);
-  console.log("projectList", projectList);
 
   useEffect(() => {
     if (user) {
-      fetch("https://e2e-tm-prod-services.nsg-e2e.com/api/items/search?size=1000&page=0", {
+      fetch(`${baseUrl}/api/items/search?size=1000&page=0`, {
         method: "POST",
         headers: {
           Authorization: accessToken,
@@ -171,7 +172,7 @@ export default function Home() {
   useEffect(() => {
     //fetch events from linked items
     if (myUser) {
-      fetch(`https://e2e-tm-prod-services.nsg-e2e.com/api/items/list/ItemLinks/${myUser[0].id}?filter=0`, {
+      fetch(`${baseUrl}/api/items/list/ItemLinks/${myUser[0].id}?filter=0`, {
         method: "GET",
         headers: {
           Authorization: accessToken,
@@ -207,7 +208,6 @@ export default function Home() {
                     textColor = "white";
                     break;
                   default:
-                    console.log(`Unhandled status: ${statusValue}`);
                     color = "grey"; // Fallback color
                     textColor = "white";
                     break;
@@ -231,14 +231,11 @@ export default function Home() {
               });
             setEvents(filteredEvents);
             setIsLoading(false);
-            console.log("filtered events with color and status", filteredEvents);
           }
         })
         .catch((err) => console.error(err));
     }
   }, [myUser, activeView]);
-
-  console.log("events", events);
 
   // Manager View Calls
 
@@ -249,8 +246,6 @@ export default function Home() {
     return matchingProperty !== undefined;
   });
 
-  console.log("managedUsers", managedUsers);
-
   // Make a call and get linked items for all managedUsers and it has to be all the managedUsers Id
 
   useEffect(() => {
@@ -258,7 +253,7 @@ export default function Home() {
       setAllVacations("");
       setTestData("");
       managedUsers.map((user) => {
-        fetch(`https://e2e-tm-prod-services.nsg-e2e.com/api/items/list/ItemLinks/${user.id}?filter=0`, {
+        fetch(`${baseUrl}/api/items/list/ItemLinks/${user.id}?filter=0`, {
           method: "GET",
           headers: {
             Authorization: accessToken,
@@ -294,7 +289,6 @@ export default function Home() {
                       textColor = "white";
                       break;
                     default:
-                      console.log(`Unhandled status: ${statusValue}`);
                       color = "grey"; // Fallback color
                       break;
                   }
@@ -315,7 +309,6 @@ export default function Home() {
                 });
               setAllVacations((prev) => [...prev, ...filteredEvents]);
               setTestData((prev) => [...prev, ...data.childItems]);
-              console.log("filtered events with color and status", filteredEvents);
             }
           })
           .catch((err) => console.error(err));
@@ -323,11 +316,9 @@ export default function Home() {
     }
   }, [allUsers, activeView]);
 
-  console.log("testdata", testData);
-
   // Update the property with the property Api
   const handleManagerAccept = (id, status, comment) => {
-    fetch(`https://e2e-tm-prod-services.nsg-e2e.com/api/items/properties?notify=true`, {
+    fetch(`${baseUrl}/api/items/properties?notify=true`, {
       method: "PUT",
       headers: {
         Authorization: accessToken,
@@ -412,7 +403,7 @@ export default function Home() {
 
   const handleSend = () => {
     // Send the POST request
-    fetch("https://e2e-tm-prod-services.nsg-e2e.com/api/items?amount=1", {
+    fetch(`${baseUrl}/api/items?amount=1`, {
       method: "POST",
       headers: {
         Authorization: accessToken,
@@ -493,7 +484,7 @@ export default function Home() {
       })
       .then((data) => {
         // Link the items
-        fetch(`https://e2e-tm-prod-services.nsg-e2e.com/api/item/items-link-order/${myUser[0].id}`, {
+        fetch(`${baseUrl}/api/item/items-link-order/${myUser[0].id}`, {
           method: "POST",
           headers: {
             Authorization: accessToken,
@@ -517,8 +508,6 @@ export default function Home() {
             return response.json();
           })
           .then((data) => {
-            console.log("Success:", data);
-
             // Update the events with calendar api
             calendarRef.current.getApi().addEvent({
               title: myUser[0].name,
@@ -853,7 +842,6 @@ export default function Home() {
                       <button
                         className="inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
                         onClick={() => {
-                          console.log("approvalEvent", approvalEvent);
                           handleManagerAccept(approvalEvent?.id, approvalEvent?.status, approvalEvent?.comment), setApprovalModalVisible(false);
                         }}
                       >

@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 import moment from "moment-timezone";
 import "moment/locale/nb";
 import "moment-timezone";
+import VacationTable from "./component/ManagerTable";
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
@@ -605,12 +606,10 @@ export default function Home() {
     );
   }
 
-  console.log("allevents", allVacations);
-
   return (
     <main className="pb-8 pt-4">
       <div className="bg-white shadow  rounded-lg py-2 md:w-[85%] w-[95%] mx-auto">
-        <div className="flex justify-between items-center my-2 w-[99%] md:w-[95%] mx-auto">
+        <div className="flex justify-between items-center px-4 md:px-0 my-2 w-[99%] md:w-[95%] mx-auto">
           <div>
             <h1 className="md:text-3xl font-bold text-center">{activeView === "Calendar" ? "My Vacations" : "Manager Calendar"}</h1>
           </div>
@@ -625,6 +624,21 @@ export default function Home() {
                 {activeView === "Manager" ? "Calendar View" : "Manager View"}
               </button>
             )}
+          </div>
+        </div>
+        <div>
+          {/* Color code line */}
+          <div className="flex justify-center items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-[#008000] rounded-full"></div>
+              <p className="text-sm">Approved</p>
+
+              <div className="w-4 h-4 bg-[#ffa500] rounded-full"></div>
+              <p className="text-sm">Requested</p>
+
+              <div className="w-4 h-4 bg-[#ff0000] rounded-full"></div>
+              <p className="text-sm">Rejected</p>
+            </div>
           </div>
         </div>
 
@@ -861,7 +875,7 @@ export default function Home() {
       </div>
 
       {activeView === "Calendar" && (
-        <div className="mt-20 w-[95%] md:w-[85%] mx-auto">
+        <div className="mt-10 w-[95%] md:w-[85%] mx-auto">
           <div className="bg-white shadow overflow-hidden rounded-lg sm:rounded-lg">
             <div className="px-4 py-5 sm:px-6">
               <h2 className="text-2xl leading-6 font-medium text-gray-900">Vacation Summary</h2>
@@ -871,7 +885,7 @@ export default function Home() {
               <dl className="sm:divide-y sm:divide-gray-200">
                 <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
                   <dt className="text-sm font-medium text-gray-500 ml-4">Total Vacation Days Used This Year</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{calculateVacationDaysUsed()}/25 days</dd>
+                  <dd className="mt-1 text-sm text-gray-900 ml-4 sm:ml-0 sm:mt-0 sm:col-span-2">{calculateVacationDaysUsed()}/25 days</dd>
                 </div>
                 <div className="py-4 mr-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
                   <dt className="text-sm font-medium text-gray-500 ml-4">Upcoming and Ongoing Vacations</dt>
@@ -909,6 +923,12 @@ export default function Home() {
           </div>
         </div>
       )}
+      {activeView === "Manager" && (
+        <div className=" w-[95%] md:w-[85%] mx-auto mt-10">
+          <VacationTable data={testData} />
+        </div>
+      )}
+      {/* <VacationTable data={testData} /> */}
     </main>
   );
 }

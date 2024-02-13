@@ -11,6 +11,7 @@ import "moment/locale/nb";
 import "moment-timezone";
 
 export default function Home() {
+  const [isLoading, setIsLoading] = useState(true);
   // Example events data
   const [events, setEvents] = useState([]);
   const [userId, setUserId] = useState(null);
@@ -227,6 +228,7 @@ export default function Home() {
                 };
               });
             setEvents(filteredEvents);
+            setIsLoading(false);
             console.log("filtered events with color and status", filteredEvents);
           }
         })
@@ -295,7 +297,7 @@ export default function Home() {
                   }
                   return {
                     id: event.id,
-                    title: event.name,
+                    title: event.name + " - " + statusValue + " vacation",
                     start: event.propertyValues.find((property) => property.definition.id === 12673261).value,
                     // end: event.propertyValues.find((property) => property.definition.id === 12673262).value,
                     end: moment(event.propertyValues.find((property) => property.definition.id === 12673262).value)
@@ -540,6 +542,7 @@ export default function Home() {
   };
 
   const handleEventClick = ({ event }) => {
+    console.log("eventeeeeeeeeeeeeeeeeeeeeee", event);
     if (activeView === "Manager") {
       setApprovalEvent({
         id: event.id,
@@ -547,7 +550,8 @@ export default function Home() {
         start: event.start,
         end: event.end,
         color: event.backgroundColor,
-        comment: event.comment,
+        comment: event.extendedProps?.comment,
+        status: event.extendedProps?.status,
       });
       setApprovalModalVisible(true);
     } else {
@@ -558,7 +562,8 @@ export default function Home() {
         start: event.start,
         end: event.end,
         color: event.backgroundColor,
-        comment: event.comment,
+        comment: event.extendedProps.comment,
+        status: event.extendedProps.status,
       });
       setEventModalVisible(true);
     }
@@ -589,6 +594,14 @@ export default function Home() {
     const today = moment();
     return (start.isSameOrAfter(today, "day") || end.isSameOrAfter(today, "day")) && (event.status === "Approved" || event.status === "Requested");
   });
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-25">
+        <div className="loader border-t-transparent rounded-full border-8 h-24 w-24"></div>
+      </div>
+    );
+  }
 
   return (
     <main>
@@ -656,11 +669,20 @@ export default function Home() {
                         <p className="text-sm mb-2">
                           <span className="font-semibold">Selected Date:</span>
                         </p>
-                        <div className="flex items-center justify-center bg-gray-100 p-2 rounded">
-                          <p className="text-sm font-semibold">
-                            {moment(selectedDate?.start).tz("Europe/Oslo").format("Do MMMM YYYY")} -{" "}
-                            {moment(selectedDate?.end).tz("Europe/Oslo").format("Do MMMM YYYY")}
-                          </p>
+                        <div className="flex items-center justify-center p-2 rounded">
+                          <input
+                            type="date"
+                            className="text-sm font-semibold border border-gray-300 rounded p-2"
+                            value={moment(selectedDate.start).format("YYYY-MM-DD")} // Convert to 'YYYY-MM-DD' format for input[type=date]
+                            onChange={(e) => setSelectedDate({ ...selectedDate, start: moment(e.target.value).tz("Europe/Oslo").format() })} // Update start date
+                          />
+                          <span className="mx-2">-</span>
+                          <input
+                            type="date"
+                            className="text-sm font-semibold border border-gray-300 rounded p-2"
+                            value={moment(selectedDate.end).format("YYYY-MM-DD")} // Convert to 'YYYY-MM-DD' format
+                            onChange={(e) => setSelectedDate({ ...selectedDate, end: moment(e.target.value).tz("Europe/Oslo").format() })} // Update end date
+                          />
                         </div>
                       </div>
                       <textarea
@@ -670,7 +692,7 @@ export default function Home() {
                         onChange={(e) => setComment(e.target.value)}
                       />
                     </div>
-                    <div className="px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <div className="px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-4">
                       <button
                         className="w-full sm:w-auto inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 mr-2 mb-2 sm:mb-0"
                         onClick={handleSend}
@@ -838,12 +860,13 @@ export default function Home() {
                     <select
                       id="status"
                       className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                      defaultValue=""
+                      defaultValue={approvalEvent?.status}
                       onChange={(e) => setApprovalEvent((prev) => ({ ...prev, status: e.target.value }))}
                     >
                       <option value="" disabled>
                         Select status
                       </option>
+                      <option value="Requested">Requested</option>
                       <option value="Approved">Approved</option>
                       <option value="Rejected">Rejected</option>
                     </select>

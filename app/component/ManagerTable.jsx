@@ -55,7 +55,9 @@ const VacationTable = ({ data }) => {
   }
 
   console.log(data);
-  const processedData = processData(data);
+
+  const filteredData = data.filter((item) => item.type.id === 12678202);
+  const processedData = processData(filteredData);
 
   return (
     <div className="overflow-x-auto rounded-lg shadow">

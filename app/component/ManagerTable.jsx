@@ -61,8 +61,8 @@ const VacationTable = ({ data }) => {
 
   return (
     <div className="overflow-x-auto rounded-lg shadow">
-      <table className="min-w-full table-auto text-sm text-left text-gray-500 dark:text-gray-400">
-        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+      <table className="min-w-full table-auto text-sm text-left text-gray-500">
+        <thead className="text-xs text-gray-700 uppercase bg-gray-50 ">
           <tr>
             <th scope="col" className="py-3 px-6">
               Name
@@ -80,8 +80,8 @@ const VacationTable = ({ data }) => {
         </thead>
         <tbody>
           {processedData.map((user, index) => (
-            <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-              <td className="py-4 px-6 font-medium text-gray-900 whitespace-nowrap dark:text-white">{user.name}</td>
+            <tr key={index} className="bg-white border-b">
+              <td className="py-4 px-6 font-medium text-gray-900 whitespace-nowrap ">{user.name}</td>
               <td className="py-4 px-6">{user.usedDays}</td>
               <td className="py-4 px-6">{user.requestedDays}</td>
               <td className="py-4 px-6">{user.leftDays}</td>

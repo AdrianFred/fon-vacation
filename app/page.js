@@ -10,9 +10,11 @@ import moment from "moment-timezone";
 import "moment/locale/nb";
 import "moment-timezone";
 import VacationTable from "./component/ManagerTable";
+import VacationSummary from "./component/VacationSummary";
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
+  const [userFound, setUserFound] = useState(true);
 
   const [events, setEvents] = useState([]);
   const [userId, setUserId] = useState(null);
@@ -49,7 +51,10 @@ export default function Home() {
     const params = new URLSearchParams(window.location.search);
     const user = params.get("user");
     const token = params.get("token");
-    if (user && token) {
+
+    if (!user || !token) {
+      setUserFound(false);
+    } else {
       setUserId(user);
       setAccessToken(token);
     }
@@ -566,37 +571,23 @@ export default function Home() {
     setModalVisible(false);
   };
 
-  // Function to calculate total vacation days used
-  const calculateVacationDaysUsed = () => {
-    const currentYear = moment().year();
-    return events.reduce((total, event) => {
-      if (event.status === "Approved" && moment(event.start).year() === currentYear) {
-        // Subtract one day from the difference since the end date is exclusive
-        const days = moment(event.end).diff(moment(event.start), "days").valueOf() + 1;
-        return total + days;
-      }
-      return total;
-    }, 0);
-  };
-
-  // Filter for upcoming and ongoing vacations
-  const upcomingAndOngoingVacations = events.filter((event) => {
-    const start = moment(event.start);
-    const end = moment(event.end);
-    const today = moment();
-    return (start.isSameOrAfter(today, "day") || end.isSameOrAfter(today, "day")) && (event.status === "Approved" || event.status === "Requested");
-  });
-
   if (isLoading) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-25">
-        <div className="loader border-t-transparent rounded-full border-8 h-24 w-24"></div>
+        {!userFound ? (
+          <div className="bg-white p-4 rounded-lg shadow-lg">
+            <h1 className="text-2xl font-semibold mb-4">User not found</h1>
+            <p className="text-sm">Please make sure you are logged in with the correct user.</p>
+          </div>
+        ) : (
+          <div className="loader border-t-transparent rounded-full border-8 h-24 w-24"></div>
+        )}
       </div>
     );
   }
 
   return (
-    <main className="pb-8 pt-4">
+    <main className="pb-8 pt-4 mx-auto max-w-[1800px]">
       <div className="bg-white shadow  rounded-lg py-2 md:w-[85%] w-[95%] mx-auto">
         <div className="flex justify-between items-center px-4 md:px-0 my-2 w-[99%] md:w-[95%] mx-auto">
           <div>
@@ -864,51 +855,7 @@ export default function Home() {
 
       {activeView === "Calendar" && (
         <div className="mt-10 w-[95%] md:w-[85%] mx-auto">
-          <div className="bg-white shadow overflow-hidden rounded-lg sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6">
-              <h2 className="text-2xl leading-6 font-medium text-gray-900">Vacation Summary</h2>
-              <p className="mt-1 max-w-2xl text-sm text-gray-500">Details of your vacation plans.</p>
-            </div>
-            <div className="border-t border-gray-200 px-4 py-5 sm:p-0">
-              <dl className="sm:divide-y sm:divide-gray-200">
-                <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
-                  <dt className="text-sm font-medium text-gray-500 ml-4">Total Vacation Days Used This Year</dt>
-                  <dd className="mt-1 text-sm text-gray-900 ml-4 sm:ml-0 sm:mt-0 sm:col-span-2">{calculateVacationDaysUsed()}/25 days</dd>
-                </div>
-                <div className="py-4 mr-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
-                  <dt className="text-sm font-medium text-gray-500 ml-4">Upcoming and Ongoing Vacations</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    <ul className="border border-gray-200 rounded-md divide-y divide-gray-200">
-                      {upcomingAndOngoingVacations.map((vacation, index) => (
-                        <li key={index} className="pl-3 pr-4 py-3 flex items-center justify-between text-sm">
-                          <div className="w-0 flex-1 flex items-center">
-                            <span className="flex-1 w-0 truncate">
-                              {moment(vacation.start).format("LL")} - {moment(vacation.end).format("LL")}
-                            </span>
-                          </div>
-                          <div className="ml-4 flex-shrink-0">
-                            <span
-                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-${vacation.color}-100 text-${vacation.color}-800`}
-                            >
-                              {vacation.status}
-                            </span>
-                          </div>
-                          {vacation.comment && (
-                            <div className="ml-4 flex-shrink-0 flex items-center text-sm text-gray-500">
-                              <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H7.414A2 2 0 006 17.414l-4-4A2 2 0 012 11V5z" />
-                              </svg>
-                              {vacation.comment}
-                            </div>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          </div>
+          <VacationSummary events={events} />
         </div>
       )}
       {activeView === "Manager" && (

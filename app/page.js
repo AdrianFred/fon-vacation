@@ -33,7 +33,7 @@ export default function Home() {
   const [comment, setComment] = useState("");
 
   const [projectList, setProjectList] = useState({});
-  const [itemTypeId, setItemTypeId] = useState({ absence: 12678202, personnelCard: 12678205 });
+  const [itemTypeId, setItemTypeId] = useState({});
   const calendarRef = useRef(null);
 
   const [approvalModalVisible, setApprovalModalVisible] = useState(false);
@@ -61,51 +61,83 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (userId && accessToken) {
-      fetch(`${baseUrl}/api/users/me?ignoreErrors=true`, {
-        method: "GET",
-        headers: {
-          Authorization: accessToken,
-          "Content-Type": "application/json",
-          "ocp-apim-subscription-key": "",
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          setUser(data);
-          if (data.groupList?.map((group) => group.displayName).includes("Managers")) {
-            setIsManager(true);
-          }
-        })
-        .catch((err) => console.error(err));
-    }
+    const fetchData = async () => {
+      if (!userId || !accessToken) return;
 
-    // Fetch projects id
-    if (accessToken) {
-      fetch(`${baseUrl}/api/projects?size=500&view=dropdown`, {
-        method: "GET",
-        headers: {
-          Authorization: accessToken,
-          "Content-Type": "application/json",
-          "ocp-apim-subscription-key": "l0avumqlod0ovdgq8dsfok53rb19e8q1",
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          console.log("projects", data);
-          if (data) {
-            data.map((project) => {
-              setProjectList((prev) => ({ ...prev, [project.name]: project.id }));
-            });
-          }
-        })
-        .catch((err) => console.error(err));
-    }
-  }, [userId, accessToken]);
+      try {
+        // Fetch user data
+        const userResponse = await fetch(`${baseUrl}/api/users/me?ignoreErrors=true`, {
+          method: "GET",
+          headers: {
+            Authorization: accessToken,
+            "Content-Type": "application/json",
+            "ocp-apim-subscription-key": "",
+          },
+        });
+        const userData = await userResponse.json();
+        setUser(userData);
+        if (userData.groupList?.some((group) => group.displayName === "Managers")) {
+          setIsManager(true);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+
+      try {
+        // Fetch projects data
+        const projectsResponse = await fetch(`${baseUrl}/api/projects?size=500&view=dropdown`, {
+          method: "GET",
+          headers: {
+            Authorization: accessToken,
+            "Content-Type": "application/json",
+            "ocp-apim-subscription-key": "l0avumqlod0ovdgq8dsfok53rb19e8q1",
+          },
+        });
+        const projectsData = await projectsResponse.json();
+        console.log("projects", projectsData);
+        if (projectsData) {
+          projectsData.forEach((project) => {
+            setProjectList((prev) => ({ ...prev, [project.name]: project.id }));
+          });
+        }
+      } catch (error) {
+        console.error(error);
+      }
+
+      try {
+        const itemTypesResponse = await fetch(`${baseUrl}/api/item-types?sort=order,name&size=500`, {
+          method: "GET",
+          headers: {
+            Authorization: accessToken,
+            "Content-Type": "application/json",
+            "ocp-apim-subscription-key": "",
+          },
+        });
+        const itemTypesData = await itemTypesResponse.json();
+        if (itemTypesData) {
+          // Assuming itemTypesData is an array of item types
+          const itemTypesId = itemTypesData.reduce((accumulator, currentItemType) => {
+            // Use the item type's name as the key for easy access
+            accumulator[currentItemType.name.toLowerCase().replace(/\s+/g, "")] = currentItemType;
+            return accumulator;
+          }, {});
+
+          setItemTypeId(itemTypesId); // Store the transformed data
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchData();
+  }, [userId, accessToken, baseUrl]);
 
   useEffect(() => {
-    if (user) {
-      fetch(`${baseUrl}/api/items/search?size=1000&page=0`, {
+    if (user && itemTypeId) {
+      const personnelCardId = itemTypeId?.personnelcard.id;
+      const userDefinitionId = itemTypeId?.personnelcard.propertyDefinitions.find((property) => property.name === "User").id;
+
+      fetch(`${baseUrl}/api/items/search?size=1500&page=0`, {
         method: "POST",
         headers: {
           Authorization: accessToken,
@@ -126,7 +158,7 @@ export default function Home() {
               operand2: {
                 _type: "value",
                 dataType: "NUMERIC",
-                text: "12678205",
+                text: personnelCardId,
               },
               operator: "EQ",
             },
@@ -161,7 +193,7 @@ export default function Home() {
           if (data) {
             // Filter the users based on the condition
             const filteredUsers = data.filter((user) => {
-              const definitionId = 12673273; // Define the definition ID
+              const definitionId = userDefinitionId;
               // Check if user.propertyValues has definitionId and the value matches the userId
               const matchingProperty = user.propertyValues.find((property) => property.definitionId === definitionId && property.value === userId);
               return matchingProperty !== undefined;
@@ -172,11 +204,11 @@ export default function Home() {
         })
         .catch((err) => console.error(err));
     }
-  }, [user]);
+  }, [itemTypeId]);
 
   useEffect(() => {
     //fetch events from linked items
-    if (myUser) {
+    if (myUser && itemTypeId) {
       fetch(`${baseUrl}/api/items/list/ItemLinks/${myUser[0].id}?filter=0`, {
         method: "GET",
         headers: {
@@ -189,10 +221,19 @@ export default function Home() {
         .then((data) => {
           if (data) {
             // Filter the events based on the condition
+
+            //needs to find it in the propertyValues
+
+            const statusDefinitionId = itemTypeId?.absence.propertyDefinitions.find((property) => property.name === "Status").id;
+            const absenceId = itemTypeId?.absence.id;
+            const startId = itemTypeId?.absence.propertyDefinitions.find((property) => property.name === "From").id;
+            const endId = itemTypeId?.absence.propertyDefinitions.find((property) => property.name === "To").id;
+            const commentId = itemTypeId?.absence.propertyDefinitions.find((property) => property.name === "Comment").id;
+
             const filteredEvents = data.childItems
-              .filter((event) => event.type.id === itemTypeId.absence)
+              .filter((event) => event.type.id === absenceId)
               .map((event) => {
-                const statusProperty = event.propertyValues.find((property) => property.definition.id === 12888200);
+                const statusProperty = event.propertyValues.find((property) => property.definition.id === statusDefinitionId);
                 let statusValue = statusProperty ? statusProperty.value : "Unknown";
 
                 let color;
@@ -220,16 +261,16 @@ export default function Home() {
                 return {
                   id: event.id,
                   title: statusValue + " vacation",
-                  start: event.propertyValues.find((property) => property.definition.id === 12673261).value,
+                  start: event.propertyValues.find((property) => property.definition.id === startId).value,
                   // end: event.propertyValues.find((property) => property.definition.id === 12673262).value,
                   // end: moment(event.propertyValues.find((property) => property.definition.id === 12673262).value).format("YYYY-MM-DDT23:59:59"),
-                  end: moment(event.propertyValues.find((property) => property.definition.id === 12673262).value)
+                  end: moment(event.propertyValues.find((property) => property.definition.id === endId).value)
                     .set({ hour: 23, minute: 59, second: 59 })
                     .format("YYYY-MM-DDTHH:mm:ssZZ"),
                   color: color, // Add the color property here
                   textColor: textColor,
                   status: statusValue, // For debugging
-                  comment: event.propertyValues.find((property) => property.definition.id === 12673263).value,
+                  comment: event.propertyValues.find((property) => property.definition.id === commentId).value,
                   allDay: false,
                   name: event.name,
                 };
@@ -240,21 +281,21 @@ export default function Home() {
         })
         .catch((err) => console.error(err));
     }
-  }, [myUser, activeView]);
+  }, [myUser, activeView, itemTypeId]);
 
   // Manager View Calls
 
   const managedUsers = allUsers.filter((user) => {
-    const definitionId = 12886899; // Define the definition ID
+    const supervisorId = itemTypeId?.personnelcard?.propertyDefinitions.find((property) => property.name === "Supervisor").id;
     // Check if user.propertyValues has definitionId and the value matches the userId
-    const matchingProperty = user.propertyValues.find((property) => property.definitionId === definitionId && property.value === userId);
+    const matchingProperty = user.propertyValues.find((property) => property.definitionId === supervisorId && property.value === userId);
     return matchingProperty !== undefined;
   });
 
   // Make a call and get linked items for all managedUsers and it has to be all the managedUsers Id
 
   useEffect(() => {
-    if (isManager) {
+    if (isManager && itemTypeId) {
       setAllVacations("");
       setTestData("");
       managedUsers.map((user) => {
@@ -269,11 +310,22 @@ export default function Home() {
           .then((res) => res.json())
           .then((data) => {
             if (data) {
+              const statusDefinitionId = itemTypeId?.absence.propertyDefinitions.find((property) => property.name === "Status").id;
+              const absenceId = itemTypeId?.absence.id;
+              const startId = itemTypeId?.absence.propertyDefinitions.find((property) => property.name === "From").id;
+              const endId = itemTypeId?.absence.propertyDefinitions.find((property) => property.name === "To").id;
+              const commentId = itemTypeId?.absence.propertyDefinitions.find((property) => property.name === "Comment").id;
+              const typeDefinitionId = itemTypeId?.absence.propertyDefinitions.find((property) => property.name === "Type").id;
+
               // Filter the events based on the condition
               const filteredEvents = data.childItems
-                .filter((event) => event.type.id === itemTypeId.absence)
+                .filter(
+                  (event) =>
+                    event.type.id === absenceId &&
+                    event.propertyValues.find((property) => property.definition.id === typeDefinitionId).value === "Ferie"
+                )
                 .map((event) => {
-                  const statusProperty = event.propertyValues.find((property) => property.definition.id === 12888200);
+                  const statusProperty = event.propertyValues.find((property) => property.definition.id === statusDefinitionId);
                   let statusValue = statusProperty ? statusProperty.value : "Unknown";
 
                   let color;
@@ -300,15 +352,15 @@ export default function Home() {
                   return {
                     id: event.id,
                     title: event.name + " - " + statusValue + " vacation",
-                    start: event.propertyValues.find((property) => property.definition.id === 12673261).value,
+                    start: event.propertyValues.find((property) => property.definition.id === startId).value,
                     // end: event.propertyValues.find((property) => property.definition.id === 12673262).value,
-                    end: moment(event.propertyValues.find((property) => property.definition.id === 12673262).value)
+                    end: moment(event.propertyValues.find((property) => property.definition.id === endId).value)
                       .set({ hour: 23, minute: 59, second: 59 })
                       .format("YYYY-MM-DDTHH:mm:ssZZ"),
                     color: color, // Add the color property here
                     textColor: textColor,
                     status: statusValue, // For debugging
-                    comment: event.propertyValues.find((property) => property.definition.id === 12673263).value,
+                    comment: event.propertyValues.find((property) => property.definition.id === commentId).value,
                     allDay: false,
                   };
                 });
@@ -323,6 +375,8 @@ export default function Home() {
 
   // Update the property with the property Api
   const handleManagerAccept = (id, status, comment) => {
+    const statusDefinitionId = itemTypeId?.absence.propertyDefinitions.find((property) => property.name === "Status").id;
+    const commentDefinitionId = itemTypeId?.absence.propertyDefinitions.find((property) => property.name === "Comment").id;
     fetch(`${baseUrl}/api/items/properties?notify=true`, {
       method: "PUT",
       headers: {
@@ -336,14 +390,14 @@ export default function Home() {
           propertyValues: [
             {
               definition: {
-                id: 12888200,
+                id: statusDefinitionId,
                 name: "Status",
               },
               value: status,
             },
             {
               definition: {
-                id: 12673263,
+                id: commentDefinitionId,
                 name: "Comment",
               },
               value: comment,
@@ -407,6 +461,12 @@ export default function Home() {
   };
 
   const handleSend = () => {
+    const typeDefinitionId = itemTypeId?.absence.propertyDefinitions.find((property) => property.name === "Type").id;
+    const fromDefinitionId = itemTypeId?.absence.propertyDefinitions.find((property) => property.name === "From").id;
+    const toDefinitionId = itemTypeId?.absence.propertyDefinitions.find((property) => property.name === "To").id;
+    const commentDefinitionId = itemTypeId?.absence.propertyDefinitions.find((property) => property.name === "Comment").id;
+    const statusDefinitionId = itemTypeId?.absence.propertyDefinitions.find((property) => property.name === "Status").id;
+
     // Send the POST request
     fetch(`${baseUrl}/api/items?amount=1`, {
       method: "POST",
@@ -426,7 +486,7 @@ export default function Home() {
         propertyValues: [
           {
             definition: {
-              id: 12673260,
+              id: typeDefinitionId,
               name: "Type",
               order: 0,
               propertyType: "LIST",
@@ -435,7 +495,7 @@ export default function Home() {
           },
           {
             definition: {
-              id: 12673261,
+              id: fromDefinitionId,
               name: "From",
               order: 1,
               propertyType: "DATE_ONLY",
@@ -444,7 +504,7 @@ export default function Home() {
           },
           {
             definition: {
-              id: 12673262,
+              id: toDefinitionId,
               name: "To",
               order: 2,
               propertyType: "DATE_ONLY",
@@ -453,7 +513,7 @@ export default function Home() {
           },
           {
             definition: {
-              id: 12673263,
+              id: commentDefinitionId,
               name: "Comment",
               order: 3,
               propertyType: "TEXT",
@@ -462,7 +522,7 @@ export default function Home() {
           },
           {
             definition: {
-              id: 12888200,
+              id: statusDefinitionId,
               name: "Status",
               order: 4,
               propertyType: "LIST",
@@ -471,13 +531,8 @@ export default function Home() {
           },
         ],
         type: {
-          id: itemTypeId.absence,
+          id: itemTypeId.absence.id,
           name: "Absence",
-
-          company: {
-            id: projectList.Føn,
-            name: "Føn Services AS",
-          },
         },
       }),
     })

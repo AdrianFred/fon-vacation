@@ -7,57 +7,60 @@ const calculateDaysBetween = (start, end) => {
   return endDate.diff(startDate, "days") + 1; // Including both start and end days
 };
 
-const processData = (data) => {
-  const summary = {};
+const VacationTable = ({ data, absenceType }) => {
+  console.log(absenceType);
+  let startTypeId = absenceType.propertyDefinitions.find((p) => p.name === "From")?.id;
+  let endTypeId = absenceType.propertyDefinitions.find((p) => p.name === "To")?.id;
+  let statusTypeId = absenceType.propertyDefinitions.find((p) => p.name === "Status")?.id;
 
-  data.forEach((item) => {
-    const { name, propertyValues } = item;
-    // Initialize or retrieve existing summary for the person
-    if (!summary[name]) {
-      summary[name] = { usedDays: 0, requestedDays: 0, leftDays: 25 }; // Assume 25 days initially available
-    }
+  const processData = (data) => {
+    const summary = {};
 
-    // Find status value once for the current item
-    const statusValue = propertyValues.find((p) => p.definition.id === 12888200)?.value;
+    data.forEach((item) => {
+      const { name, propertyValues } = item;
+      // Initialize or retrieve existing summary for the person
+      if (!summary[name]) {
+        summary[name] = { usedDays: 0, requestedDays: 0, leftDays: 25 }; // Assume 25 days initially available
+      }
 
-    // Find the start and end dates only if status is Approved or Requested to avoid unnecessary processing
-    if (statusValue === "Approved" || statusValue === "Requested") {
-      const startDateValue = propertyValues.find((p) => p.definition.id === 12673261)?.value;
-      const endDateValue = propertyValues.find((p) => p.definition.id === 12673262)?.value;
+      // Find status value once for the current item
+      const statusValue = propertyValues.find((p) => p.definition.id === statusTypeId)?.value;
 
-      if (startDateValue && endDateValue) {
-        const daysBetween = calculateDaysBetween(startDateValue, endDateValue);
+      // Find the start and end dates only if status is Approved or Requested to avoid unnecessary processing
+      if (statusValue === "Approved" || statusValue === "Requested") {
+        const startDateValue = propertyValues.find((p) => p.definition.id === startTypeId)?.value;
+        const endDateValue = propertyValues.find((p) => p.definition.id === endTypeId)?.value;
 
-        if (statusValue === "Approved") {
-          summary[name].usedDays += daysBetween;
-        } else if (statusValue === "Requested") {
-          summary[name].requestedDays += daysBetween;
-        }
+        if (startDateValue && endDateValue) {
+          const daysBetween = calculateDaysBetween(startDateValue, endDateValue);
 
-        // Adjust leftDays only for approved days
-        if (statusValue === "Approved") {
-          summary[name].leftDays -= daysBetween;
+          if (statusValue === "Approved") {
+            summary[name].usedDays += daysBetween;
+          } else if (statusValue === "Requested") {
+            summary[name].requestedDays += daysBetween;
+          }
+
+          // Adjust leftDays only for approved days
+          if (statusValue === "Approved") {
+            summary[name].leftDays -= daysBetween;
+          }
         }
       }
-    }
-  });
+    });
 
-  // Convert the summary object back into an array for rendering
-  return Object.entries(summary).map(([name, details]) => ({
-    name,
-    ...details,
-  }));
-};
-
-const VacationTable = ({ data }) => {
+    // Convert the summary object back into an array for rendering
+    return Object.entries(summary).map(([name, details]) => ({
+      name,
+      ...details,
+    }));
+  };
   if (!data) {
     return null;
   }
 
-  console.log(data);
-
-  const filteredData = data.filter((item) => item.type.id === 12678202);
+  const filteredData = data.filter((item) => item.type.id === absenceType.id);
   const processedData = processData(filteredData);
+  console.log("processedData", processedData);
 
   return (
     <div className="overflow-x-auto rounded-lg shadow">

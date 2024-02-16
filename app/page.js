@@ -96,9 +96,7 @@ export default function Home() {
         const projectsData = await projectsResponse.json();
         console.log("projects", projectsData);
         if (projectsData) {
-          projectsData.forEach((project) => {
-            setProjectList((prev) => ({ ...prev, [project.name]: project.id }));
-          });
+          setProjectList(projectsData[0]);
         }
       } catch (error) {
         console.error(error);
@@ -134,8 +132,16 @@ export default function Home() {
 
   useEffect(() => {
     if (user && itemTypeId) {
-      const personnelCardId = itemTypeId?.personnelcard.id;
-      const userDefinitionId = itemTypeId?.personnelcard.propertyDefinitions.find((property) => property.name === "User").id;
+      let personnelCardId;
+      let userDefinitionId;
+
+      if (itemTypeId?.personnelcard) {
+        personnelCardId = itemTypeId?.personnelcard.id;
+        userDefinitionId = itemTypeId?.personnelcard.propertyDefinitions.find((property) => property.name === "User").id;
+      } else {
+        personnelCardId = itemTypeId?.employee.id;
+        userDefinitionId = itemTypeId?.employee.propertyDefinitions.find((property) => property.name === "User").id;
+      }
 
       fetch(`${baseUrl}/api/items/search?size=1500&page=0`, {
         method: "POST",
@@ -286,7 +292,13 @@ export default function Home() {
   // Manager View Calls
 
   const managedUsers = allUsers.filter((user) => {
-    const supervisorId = itemTypeId?.personnelcard?.propertyDefinitions.find((property) => property.name === "Supervisor").id;
+    let supervisorId;
+    if (itemTypeId?.personnelcard) {
+      supervisorId = itemTypeId?.personnelcard.propertyDefinitions.find((property) => property.name === "Supervisor").id;
+    } else {
+      supervisorId = itemTypeId?.employee.propertyDefinitions.find((property) => property.name === "Supervisor").id;
+    }
+
     // Check if user.propertyValues has definitionId and the value matches the userId
     const matchingProperty = user.propertyValues.find((property) => property.definitionId === supervisorId && property.value === userId);
     return matchingProperty !== undefined;
@@ -298,6 +310,7 @@ export default function Home() {
     if (isManager && itemTypeId) {
       setAllVacations("");
       setTestData("");
+      console.log("managedUsers", managedUsers);
       managedUsers.map((user) => {
         fetch(`${baseUrl}/api/items/list/ItemLinks/${user.id}?filter=0`, {
           method: "GET",
@@ -372,6 +385,8 @@ export default function Home() {
       });
     }
   }, [allUsers, activeView]);
+
+  console.log("testData", testData);
 
   // Update the property with the property Api
   const handleManagerAccept = (id, status, comment) => {
@@ -478,9 +493,9 @@ export default function Home() {
       body: JSON.stringify({
         name: myUser[0].name,
         id: null,
-        typeId: itemTypeId.absence,
+        typeId: itemTypeId.absence.id,
         project: {
-          id: projectList.Føn,
+          id: projectList.id,
         },
         amount: 1,
         propertyValues: [
@@ -625,6 +640,8 @@ export default function Home() {
     // Close the modal
     setModalVisible(false);
   };
+
+  console.log("ItemtypeID", itemTypeId);
 
   if (isLoading) {
     return (
@@ -915,7 +932,7 @@ export default function Home() {
       )}
       {activeView === "Manager" && (
         <div className=" w-[95%] md:w-[85%] mx-auto mt-10">
-          <VacationTable data={testData} />
+          <VacationTable data={testData} absenceType={itemTypeId?.absence} />
         </div>
       )}
       {/* <VacationTable data={testData} /> */}
